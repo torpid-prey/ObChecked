@@ -1,0 +1,48 @@
+{
+  "column": "Profile",
+  "rules": [
+    {
+      "like": "PFC*",
+      "checks": [
+        {
+          "target": "Grade", // column name
+          "okay": [ "300PLUS" ]
+        },
+        {
+          "target": "Length",
+          "numeric": true,
+          "ok_max": 12000,
+          "warn_max": 12500
+        }
+
+      ]
+    },
+    {
+      "like": "SHS*",
+      "checks": [
+        {
+          "target": "Grade",
+          "okay": [ "350" ],
+          "yellow": [ "350L0" ]
+        },
+        {
+          "target": "Length",
+          "numeric": true,
+          "safe": 12000,
+          "max_yellow": 18000,
+          "max_orange": 21000
+        }
+      ]
+    },
+    {
+      "like": "PL*",
+      "checks": [
+        {
+          "target": "Part Mark",
+          "okay": [ "F", "V" ]
+        }
+      ]
+    }
+  ],
+  "defaults": { "miss": "red" }
+}

@@ -1,0 +1,546 @@
+{
+  "Parts": [
+    {
+      "Header": "GUID",
+      "PropertyName": "GUID",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": false,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 300,
+        "Min": 300
+      }
+    },
+    {
+      "Header": "Name",
+      "PropertyName": "NAME",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 200,
+        "Min": 100
+      }
+    },
+    {
+      "Header": "Profile",
+      "PropertyName": "PROFILE",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 200,
+        "Min": 100
+      }
+    },
+    {
+      "Header": "Length",
+      "PropertyName": "LENGTH_NET",
+      "Source": "ReportProperty",
+      "DataType": "double",
+      "Format": "0.##",
+      "Visible": true,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 100,
+        "Min": 80
+      }
+    },
+    {
+      "Header": "Grade",
+      "PropertyName": "MATERIAL",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 100,
+        "Min": 80
+      }
+    },
+    {
+      "Header": "Assy Pre",
+      "PropertyName": "ASSEMBLY_PREFIX",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 75,
+        "Min": 50
+      }
+    },
+    {
+      "Header": "Part Pre",
+      "PropertyName": "PART_PREFIX",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 75,
+        "Min": 50
+      }
+    },
+    {
+      "Header": "Assy Pos",
+      "PropertyName": "ASSEMBLY_POS",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 75,
+        "Min": 50
+      }
+    },
+    {
+      "Header": "Part Pos",
+      "PropertyName": "PART_POS",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 75,
+        "Min": 50
+      }
+    },
+    {
+      "Header": "Class",
+      "PropertyName": "CLASS",
+      "Source": "Direct",
+      "DataType": "int",
+      "Visible": true,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 50,
+        "Min": 50
+      }
+    },
+    {
+      "Header": "Phase Name",
+      "PropertyName": "PHASE.NAME",
+      "Source": "Direct",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 150,
+        "Min": 100
+      }
+    },
+    {
+      "Header": "Phase Others",
+      "PropertyName": "PHASE.OTHERS",
+      "Source": "Direct",
+      "DataType": "string",
+      "Visible": true,
+      "Alignment": 16,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 150,
+        "Min": 100
+      }
+    },
+    {
+      "Header": "Phase No",
+      "PropertyName": "PHASE.NUMBER",
+      "Source": "Direct",
+      "DataType": "int",
+      "Visible": true,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 80,
+        "Min": 50
+      }
+    },
+    {
+      "Header": "User Phase",
+      "PropertyName": "USER_PHASE",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 90,
+        "Min": 50
+      }
+    },
+    {
+      "Header": "Phase Comment",
+      "PropertyName": "PHASE.COMMENT",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 120,
+        "Min": 80
+      }
+    },
+    {
+      "Header": "Rolled",
+      "PropertyName": "CUSTOM.PB_BENDING_RADIUS_1",
+      "Source": "ReportProperty",
+      "DataType": "double",
+      "Format": "0.#",
+      "Visible": true,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 100,
+        "Min": 80
+      }
+    },
+    {
+      "Header": "Radius",
+      "PropertyName": "RADIUS",
+      "Source": "ReportProperty",
+      "DataType": "double",
+      "Format": "0.#",
+      "Visible": false,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 100,
+        "Min": 80
+      }
+    },
+    {
+      "Header": "Weight",
+      "PropertyName": "WEIGHT",
+      "Source": "ReportProperty",
+      "DataType": "double",
+      "Format": "0.##",
+      "Visible": true,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 100,
+        "Min": 80
+      }
+    },
+    {
+      "Header": "Rotation",
+      "PropertyName": "ROTATION",
+      "Source": "Direct",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 100,
+        "Min": 80
+      }
+    },
+    {
+      "Header": "Angle °",
+      "PropertyName": "ANGLE",
+      "Source": "Direct",
+      "DataType": "double",
+      "Format": "0.##",
+      "Visible": true,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 75,
+        "Min": 50
+      }
+    },
+    {
+      "Header": "Finish",
+      "PropertyName": "FINISH",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "FILL",
+        "Value": 100, // % for fill
+        "Min": 150
+      }
+    },
+    {
+      "Header": "Comment",
+      "PropertyName": "comment",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "FILL",
+        "Value": 100, // % for fill
+        "Min": 150
+      }
+    },
+    {
+      "Header": "On Hold",
+      "PropertyName": "fabricator",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 75,
+        "Min": 50
+      }
+    },
+    {
+      "Header": "Main",
+      "PropertyName": "MAIN_PART",
+      "Source": "ReportProperty",
+      "DataType": "bool",
+      "Visible": true,
+      "Width": {
+        "Mode": "COLUMNHEADER",
+        "Value": 50,
+        "Min": 50
+      }
+    },
+    {
+      "Header": "Sub",
+      "PropertyName": "ASSEMBLY.HIERARCHY_LEVEL",
+      "Source": "ReportProperty",
+      "DataType": "int",
+      "Visible": true,
+      "Width": {
+        "Mode": "COLUMNHEADER",
+        "Value": 50,
+        "Min": 50
+      }
+    }
+  ],
+  "Bolts": [
+    {
+      "Header": "GUID",
+      "PropertyName": "GUID",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": false,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 150,
+        "Min": 100
+      }
+    },
+    {
+      "Header": "Bolt Diameter",
+      "PropertyName": "DIAMETER",
+      "Source": "ReportProperty",
+      "DataType": "double",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 100,
+        "Min": 80
+      }
+    },
+    {
+      "Header": "Hole Diameter",
+      "PropertyName": "HOLE.HOLE_DIAMETER",
+      "Source": "ReportProperty",
+      "DataType": "double",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 100,
+        "Min": 80
+      }
+    },
+    {
+      "Header": "Bolt Name",
+      "PropertyName": "NAME",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 100,
+        "Min": 80
+      }
+    },
+    {
+      "Header": "Bolt Standard",
+      "PropertyName": "BOLT_STANDARD",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 100,
+        "Min": 100
+      }
+    },
+    {
+      "Header": "Tolerance",
+      "PropertyName": "HOLE.HOLE_TOLERANCE",
+      "Source": "ReportProperty",
+      "DataType": "double",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 80,
+        "Min": 60
+      }
+    },
+    {
+      "Header": "Length",
+      "PropertyName": "LENGTH",
+      "Source": "ReportProperty",
+      "DataType": "double",
+      "Format": "0.##",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 80,
+        "Min": 60
+      }
+    },
+    {
+      "Header": "Extra Length",
+      "PropertyName": "EXTRA_LENGTH",
+      "Source": "ReportProperty",
+      "DataType": "double",
+      "Format": "0.##",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 80,
+        "Min": 60
+      }
+    },
+    {
+      "Header": "Contains Bolt",
+      "PropertyName": "CONTAINS_BOLT",
+      "Source": "Direct",
+      "DataType": "bool",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 100,
+        "Min": 100
+      }
+    },
+    {
+      "Header": "Hole Type",
+      "PropertyName": "HOLE_TYPE",
+      "Source": "Direct",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 80,
+        "Min": 60
+      }
+    },
+    {
+      "Header": "Phase Name",
+      "PropertyName": "PHASE.NAME",
+      "Source": "Direct",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 80,
+        "Min": 60
+      }
+    },
+    {
+      "Header": "Phase Others",
+      "PropertyName": "PHASE.OTHERS",
+      "Source": "Direct",
+      "DataType": "string",
+      "Visible": true,
+      "Alignment": 16,
+      "Width": {
+        "Mode": "FILL",
+        "Value": 80,
+        "Min": 60
+      }
+    },
+    {
+      "Header": "Comment",
+      "PropertyName": "comment",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "FILL",
+        "Value": 100,
+        "Min": 100
+      }
+    }
+  ],
+  "Components": [
+    {
+      "Header": "GUID",
+      "PropertyName": "GUID",
+      "Source": "ReportProperty",
+      "DataType": "string",
+      "Visible": false,
+      "Width": {
+        "Mode": "NONE",
+        "Value": 150,
+        "Min": 100
+      }
+    },
+    {
+      "Header": "Name",
+      "PropertyName": "NAME",
+      "Source": "Direct",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 150,
+        "Min": 100
+      }
+    },
+    {
+      "Header": "Number",
+      "PropertyName": "NUMBER",
+      "Source": "Direct",
+      "DataType": "int",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 80,
+        "Min": 60
+      }
+    },
+    {
+      "Header": "Type",
+      "PropertyName": "TYPE",
+      "Source": "Direct",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 100,
+        "Min": 80
+      }
+    },
+    {
+      "Header": "Phase Name",
+      "PropertyName": "PHASE.NAME",
+      "Source": "Direct",
+      "DataType": "string",
+      "Visible": true,
+      "Width": {
+        "Mode": "ALLCELLS",
+        "Value": 80,
+        "Min": 60
+      }
+    },
+    {
+      "Header": "Phase Others",
+      "PropertyName": "PHASE.OTHERS",
+      "Source": "Direct",
+      "DataType": "string",
+      "Visible": true,
+      "Alignment": 16,
+      "Width": {
+        "Mode": "FILL",
+        "Value": 80,
+        "Min": 60
+      }
+    }
+  ]
+}
