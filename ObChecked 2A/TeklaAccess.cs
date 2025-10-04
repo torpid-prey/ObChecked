@@ -52,14 +52,14 @@ namespace ObChecked.TeklaAccess
         }
 
         internal static void BuildPropertyBatches(
-            IList<ColumnLayout> layout,
+            IList<ColumnDefinition> layout,
             ArrayList reportStringProps,
             ArrayList reportDoubleProps,
             ArrayList reportIntProps)
         {
             for (int i = 0; i < layout.Count; i++)
             {
-                ColumnLayout col = layout[i];
+                ColumnDefinition col = layout[i];
                 if (!"ReportProperty".Equals(col.Source, StringComparison.OrdinalIgnoreCase))
                     continue;
 
@@ -165,9 +165,9 @@ namespace ObChecked.TeklaAccess
 
     internal sealed class RowUDACache
     {
-        private readonly Dictionary<string, string> _s = new Dictionary<string, string>(8, StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, double> _d = new Dictionary<string, double>(8, StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, int> _i = new Dictionary<string, int>(8, StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> _s = new(8, StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, double> _d = new(8, StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, int> _i = new(8, StringComparer.OrdinalIgnoreCase);
 
         internal bool TryGetString(string k, out string v) => _s.TryGetValue(k, out v);
         internal bool TryGetDouble(string k, out double v) => _d.TryGetValue(k, out v);
@@ -182,9 +182,9 @@ namespace ObChecked.TeklaAccess
 
     internal sealed class  UDA
     {
-        internal static object GetValue(TSM.ModelObject obj, ColumnPlan plan, RowUDACache cache)
+        internal static object GetValue(TSM.ModelObject obj, ColumnMetadata plan, RowUDACache cache)
         {
-            string name = plan.Name;
+            string name = plan.Column.PropertyName;
 
             switch (plan.DataType) // "double" | "int" | (default string)
             {
@@ -245,15 +245,15 @@ namespace ObChecked.TeklaAccess
                     return part.Position != null ? (object)part.Position.RotationOffset : (object)0.0;
 
                 case "PHASE.NAME":
-                    if (cache.needAnyPhase) PhaseResolve.EnsurePartPhase(part, false, cache);
+                    if (cache.needAnyPhase) EnsurePhase.Part(part, false, cache);
                     return cache.Phase.Has ? (object)cache.Phase.Name : (object)"";
 
                 case "PHASE.NUMBER":
-                    if (cache.needAnyPhase) PhaseResolve.EnsurePartPhase(part, false, cache);
+                    if (cache.needAnyPhase) EnsurePhase.Part(part, false, cache);
                     return cache.Phase.Has ? (object)cache.Phase.Number : (object)DBNull.Value;
 
                 case "PHASE.OTHERS":
-                    if (cache.needAnyPhase) PhaseResolve.EnsurePartPhase(part, true, cache); // compute expensive “others” lazily
+                    if (cache.needAnyPhase) EnsurePhase.Part(part, true, cache); // compute expensive “others” lazily
                     return cache.Phase.Has ? (object)(cache.Phase.Others ?? "") : (object)"";
 
                 default:
@@ -276,15 +276,15 @@ namespace ObChecked.TeklaAccess
                 case "HOLE_TYPE": return bolt.PlainHoleType.ToString();
 
                 case "PHASE.NAME":
-                    if (cache.needAnyPhase) PhaseResolve.EnsureBoltPhase(bolt, false, cache);
+                    if (cache.needAnyPhase) EnsurePhase.Bolt(bolt, false, cache);
                     return cache.Phase.Has ? (object)cache.Phase.Name : (object)"";
 
                 case "PHASE.NUMBER":
-                    if (cache.needAnyPhase) PhaseResolve.EnsureBoltPhase(bolt, false, cache);
+                    if (cache.needAnyPhase) EnsurePhase.Bolt(bolt, false, cache);
                     return cache.Phase.Has ? (object)cache.Phase.Number : (object)DBNull.Value;
 
                 case "PHASE.OTHERS":
-                    if (cache.needAnyPhase) PhaseResolve.EnsureBoltPhase(bolt, true, cache);
+                    if (cache.needAnyPhase) EnsurePhase.Bolt(bolt, true, cache);
                     return cache.Phase.Has ? (object)(cache.Phase.Others ?? "") : (object)"";
 
                 default:
@@ -321,15 +321,15 @@ namespace ObChecked.TeklaAccess
                     return component.GetType().ToString().Replace("Tekla.Structures.Model.", "");
 
                 case "PHASE.NAME":
-                    if (cache.needAnyPhase) PhaseResolve.EnsureComponentPhase(component, false, cache);
+                    if (cache.needAnyPhase) EnsurePhase.Component(component, false, cache);
                     return cache.Phase.Has ? (object)cache.Phase.Name : (object)"";
 
                 case "PHASE.NUMBER":
-                    if (cache.needAnyPhase) PhaseResolve.EnsureComponentPhase(component, false, cache);
+                    if (cache.needAnyPhase) EnsurePhase.Component(component, false, cache);
                     return cache.Phase.Has ? (object)cache.Phase.Number : (object)DBNull.Value;
 
                 case "PHASE.OTHERS":
-                    if (cache.needAnyPhase) PhaseResolve.EnsureComponentPhase(component, true, cache);
+                    if (cache.needAnyPhase) EnsurePhase.Component(component, true, cache);
                     return cache.Phase.Has ? (object)(cache.Phase.Others ?? "") : (object)"";
 
                 default:
@@ -385,7 +385,10 @@ namespace ObChecked.TeklaAccess
         private static Dictionary<int, string> _map;
         private static bool _built;
 
-        internal static void EnsureLoaded()
+        /// <summary>
+        /// Initialise the component catalog cache for quick retrieval
+        /// </summary>
+        internal static void Initialise()
         {
             if (_built) return;
             lock (_lock)
@@ -405,7 +408,7 @@ namespace ObChecked.TeklaAccess
 
         internal static bool TryGet(int number, out string name)
         {
-            EnsureLoaded();
+            Initialise(); // maybe should throw exception instead
             return _map.TryGetValue(number, out name);
         }
     }
@@ -476,13 +479,14 @@ namespace ObChecked.TeklaAccess
         /// <param name="modelObject"></param>
         /// <param name="boltGroup"></param>
         /// <returns></returns>
-        internal static bool IsDetail(this TSM.ModelObject modelObject, ref TSM.Detail detail)
+        internal static bool IsDetail(this TSM.ModelObject modelObject, out TSM.Detail detail)
         {
             if (modelObject is TSM.Detail)
             {
                 detail = modelObject as TSM.Detail;
                 return true;
             }
+            detail = null;
             return false;
         }
 
@@ -492,13 +496,14 @@ namespace ObChecked.TeklaAccess
         /// <param name="modelObject"></param>
         /// <param name="boltGroup"></param>
         /// <returns></returns>
-        internal static bool IsConnection(this TSM.ModelObject modelObject, ref TSM.Connection connection)
+        internal static bool IsConnection(this TSM.ModelObject modelObject, out TSM.Connection connection)
         {
             if (modelObject is TSM.Connection)
             {
                 connection = modelObject as TSM.Connection;
                 return true;
             }
+            connection = null;  
             return false;
         }
 
@@ -508,13 +513,14 @@ namespace ObChecked.TeklaAccess
         /// <param name="modelObject"></param>
         /// <param name="customPart"></param>
         /// <returns></returns>
-        internal static bool IsCustomPart(this TSM.ModelObject modelObject, ref TSM.CustomPart customPart)
+        internal static bool IsCustomPart(this TSM.ModelObject modelObject, out TSM.CustomPart customPart)
         {
             if (modelObject is TSM.CustomPart)
             {
                 customPart = modelObject as TSM.CustomPart;
                 return true;
             }
+            customPart = null;
             return false;
         }
 

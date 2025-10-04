@@ -13,7 +13,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using Tekla.Structures.Geometry3d;
 using TSM = Tekla.Structures.Model;
 using TSMUI = Tekla.Structures.Model.UI;
 
@@ -53,7 +52,7 @@ namespace ObChecked
 
         // Form Events
         
-        private GridLayouts gridLayouts;
+        private GridLayout gridLayout;
         private readonly DataTable tableParts = new();
         private readonly DataTable tableBolts = new();
         private readonly DataTable tableComponents = new();
@@ -67,24 +66,24 @@ namespace ObChecked
         private void FormMain_Load(object sender, EventArgs e)
         {
             string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ColumnConfig.json");
-            gridLayouts = JsonConvert.DeserializeObject<GridLayouts>(File.ReadAllText(path));
+            gridLayout = JsonConvert.DeserializeObject<GridLayout>(File.ReadAllText(path));
 
             TSM.ModelObjectEnumerator.AutoFetch = true;
 
-            ComponentCatalog.EnsureLoaded();
+            ComponentCatalog.Initialise();
 
             // mimic showing each tab to ensure handles are created before binding tables
             Grid.EnsureHandlesForAllGrids(tabControl1);
 
             // define all columns and assign datatype from .json layout
-            Grid.BuildColumnSchemaFromLayout(tableParts, gridLayouts.Parts);
-            Grid.BuildColumnSchemaFromLayout(tableBolts, gridLayouts.Bolts);
-            Grid.BuildColumnSchemaFromLayout(tableComponents, gridLayouts.Components);
+            Grid.BuildColumnSchemaFromLayout(tableParts, gridLayout.Parts);
+            Grid.BuildColumnSchemaFromLayout(tableBolts, gridLayout.Bolts);
+            Grid.BuildColumnSchemaFromLayout(tableComponents, gridLayout.Components);
 
             // fill all tables with data and bind to grids from .json layout
-            Grid.ConfigureGridFromLayout(dgvParts, tableParts, gridLayouts.Parts);
-            Grid.ConfigureGridFromLayout(dgvBolts, tableBolts, gridLayouts.Bolts);
-            Grid.ConfigureGridFromLayout(dgvComponents, tableComponents, gridLayouts.Components);
+            Grid.ConfigureGridFromLayout(dgvParts, tableParts, gridLayout.Parts);
+            Grid.ConfigureGridFromLayout(dgvBolts, tableBolts, gridLayout.Bolts);
+            Grid.ConfigureGridFromLayout(dgvComponents, tableComponents, gridLayout.Components);
         }
 
         // Background workers
@@ -100,7 +99,7 @@ namespace ObChecked
                 TSMUI.ModelObjectSelector selector = new();
                 TSM.ModelObjectEnumerator selectedObjects = selector.GetSelectedObjects();
 
-                RawObjectConsolidator rawObjectConsolidator = new();
+                RawObjectStore rawStore = new();
 
                 int count = selectedObjects.GetSize();   // # of ROOTS (not children) → perfect for fetch %
                 multiProgress.BeginFetch(count);         // also zeros objectsDone
@@ -124,7 +123,7 @@ namespace ObChecked
                         if (eachObj != null)
                         {
                             // Add root object and all nested children to applicable buckets
-                            rawObjectConsolidator.Add(eachObj, multiProgress);
+                            rawStore.Add(eachObj, multiProgress);
                             multiProgress.IncFetchDone();
 
                             int percent = multiProgress.GetFetchPercent();
@@ -143,7 +142,7 @@ namespace ObChecked
                     multiProgress.MarkFetchComplete();
                 }
 
-                e.Result = rawObjectConsolidator;
+                e.Result = rawStore;
             }
             catch (Exception ex)
             {
@@ -170,21 +169,21 @@ namespace ObChecked
                 return;
             }
 
-            RawObjectConsolidator rawObjectConsolidator = e.Result as RawObjectConsolidator;
+            RawObjectStore rawStore = e.Result as RawObjectStore;
 
             // reset progress bar
             progressFetch.Value = 0;
 
-            if (rawObjectConsolidator != null && rawObjectConsolidator.Count > 0)
+            if (rawStore != null && rawStore.Count > 0)
             {
-                Debug.Print("Selected {0} parts.", rawObjectConsolidator.Parts.Fetch.Count);
-                Debug.Print("Selected {0} bolts.", rawObjectConsolidator.Bolts.Fetch.Count);
-                Debug.Print("Selected {0} components.", rawObjectConsolidator.Components.Fetch.Count);
+                Debug.Print("Selected {0} parts.", rawStore.Parts.Fetch.Count);
+                Debug.Print("Selected {0} bolts.", rawStore.Bolts.Fetch.Count);
+                Debug.Print("Selected {0} components.", rawStore.Components.Fetch.Count);
 
                 // Prep processing phase (sets partsDone/boltsDone/compsDone to 0; totals stay from fetch)
 
                 PhaseCache.Clear();
-                AssyMainCache.Clear();
+                AssemblyCache.Clear();
                 
 
                 multiProgress.ResetProcessing();
@@ -194,25 +193,25 @@ namespace ObChecked
 
                 if (!BgwProcessParts.IsBusy)
                 {
-                    rawObjectConsolidator.Parts.ColumnLayout = gridLayouts.Parts;
-                    BgwProcessParts.RunWorkerAsync(rawObjectConsolidator.Parts);
+                    rawStore.Parts.ColumnLayout = gridLayout.Parts;
+                    BgwProcessParts.RunWorkerAsync(rawStore.Parts);
                 }
 
                 if (!BgwProcessBolts.IsBusy)
                 {
-                    rawObjectConsolidator.Bolts.ColumnLayout = gridLayouts.Bolts;
-                    BgwProcessBolts.RunWorkerAsync(rawObjectConsolidator.Bolts);
+                    rawStore.Bolts.ColumnLayout = gridLayout.Bolts;
+                    BgwProcessBolts.RunWorkerAsync(rawStore.Bolts);
                 }
 
                 if (!BgwProcessComponents.IsBusy)
                 {
-                    rawObjectConsolidator.Components.ColumnLayout = gridLayouts.Components;
-                    BgwProcessComponents.RunWorkerAsync(rawObjectConsolidator.Components);
+                    rawStore.Components.ColumnLayout = gridLayout.Components;
+                    BgwProcessComponents.RunWorkerAsync(rawStore.Components);
                 }
 
-                if (rawObjectConsolidator.Others.Count > 0)
+                if (rawStore.Others.Count > 0)
                 {
-                    string otherTypes = string.Join(", ", rawObjectConsolidator.Others);
+                    string otherTypes = string.Join(", ", rawStore.Others);
                     Debug.Print(otherTypes);
                 }
             }
@@ -237,10 +236,13 @@ namespace ObChecked
                 Grid.BuildColumnSchemaFromLayout(result, rawObjects.ColumnLayout);
 
                 // 2) precompute column plan
-                ColumnPlan[] plans = ColumnPlans.Build(result, rawObjects.ColumnLayout);
+                ColumnMetadata[] plans = ColumnPlans.Build(result, rawObjects.ColumnLayout);
 
                 // check if we need phase info
-                ColumnPlans.ScanPhaseNeeds(plans, out bool needName, out bool needNumber, out bool needOthers);
+                //ColumnPlans.ScanPhaseNeeds(plans, out bool needName, out bool needNumber, out bool needOthers);
+
+                // use extension or make scanphases as an instance method??
+                plans.ScanPhaseNeeds(out bool needName, out bool needNumber, out bool needOthers);
 
                 // 3) organize property name batches once
                 ArrayList reportStringProps = new();
@@ -372,106 +374,6 @@ namespace ObChecked
                          
                 }
 
-
-                //for (int i = 0; i < rawObjects.Fetch.Count; i++)
-                //{
-                //    var obj = rawObjects.Fetch[i];
-                //    TSM.Part part = null;
-                //    if (!obj.ModelObject.IsPart(ref part) || part == null) continue;
-
-                //    // FETCH
-                //    sw.Restart();
-
-                //    // per-row cache
-                //    var rowCache = new PartRowCache
-                //    {
-                //        needAnyPhase = (needName || needNumber || needOthers)
-                //    };
-
-                //    Report.FetchPropertiesForPart(part,
-                //        reportStringProps, reportDoubleProps, reportIntProps,
-                //        stringResults, doubleResults, intResults);
-                //    sw.Stop(); tFetch += sw.ElapsedTicks;
-
-                //    // reuse uda cache
-                //    udaCache.Clear();
-
-                //    // BUILD rowBuf
-                //    sw.Restart();
-
-                //    //// BEFORE the row loop
-                //    //var colTimers = new long[plans.Length];
-
-                //    // INSIDE the build loop, wrap each column fill:
-                //    for (int p = 0; p < plans.Length; p++)
-                //    {
-                //        //var t0 = Stopwatch.GetTimestamp();
-
-                //        var plan = plans[p];
-                //        object value; // = DBNull.Value;
-
-                //        switch (plan.Kind)
-                //        {
-                //            case ColumnKind.ReportString:
-                //                value = stringResults[plan.Name] ?? "";
-                //                break;
-
-                //            case ColumnKind.ReportDouble:
-                //                value = doubleResults[plan.Name] ?? (object)DBNull.Value;
-                //                break;
-
-                //            case ColumnKind.ReportInt:
-                //                value = intResults[plan.Name] ?? (object)DBNull.Value;
-                //                break;
-
-                //            case ColumnKind.ReportBool: // <- add this kind, or test plan.DataType=="bool"
-                //                {
-                //                    if (Report.TryGetBoolFromBatches(plan.Name, intResults, stringResults, out bool b))
-                //                        value = b;
-                //                    else
-                //                        value = DBNull.Value; // or false, if you prefer
-                //                    break;
-                //                }
-
-                //            case ColumnKind.User:
-                //                // your existing UDA path (extend to parse bool if needed)
-                //                value = UDA.GetValue(part /*or bolt/component*/, plan, udaCache);
-                //                break;
-
-                //            default: // Direct
-                //                value = Direct.Part(part, plan.Name, rowCache) ?? (object)DBNull.Value;
-                //                break;
-                //        }
-
-                //        rowBuf[plan.Ordinal] = value;
-
-                //        //colTimers[p] += Stopwatch.GetTimestamp() - t0;
-                //    }
-
-                //    //// AFTER the loop (convert to ms and print top offenders)
-                //    //for (int p = 0; p < plans.Length; p++)
-                //    //{
-                //    //    double ms = colTimers[p] * 1000.0 / Stopwatch.Frequency;
-                //    //    Debug.Print($"COL {p} '{rawObjects.ColumnLayout[p].Header}': {ms:n1} ms");
-                //    //}
-
-                //    sw.Stop(); tBuild += sw.ElapsedTicks;
-
-                //    // ADD
-                //    sw.Restart();
-                //    result.Rows.Add(rowBuf); // DataTable copies values
-                //    sw.Stop(); tAdd += sw.ElapsedTicks;
-
-                //    // PROGRESS (throttled)
-                //    sw.Restart();
-                //    multiProgress.IncPartsDone();
-                //    {
-                //        int pct = multiProgress.GetProcessingPercent();
-                //        if (pct != pc) { BgwProcessParts.ReportProgress(pct); pc = pct; }
-                //    }
-                //    sw.Stop(); tProgress += sw.ElapsedTicks;
-                //}
-
                 // after loop
                 double msFetch = tFetch * 1000.0 / Stopwatch.Frequency;
                 double msBuild = tBuild * 1000.0 / Stopwatch.Frequency;
@@ -544,7 +446,7 @@ namespace ObChecked
                 Grid.BuildColumnSchemaFromLayout(result, rawObjects.ColumnLayout);
 
                 // 2) precompute column plan
-                ColumnPlan[] plans = ColumnPlans.Build(result, rawObjects.ColumnLayout);
+                ColumnMetadata[] plans = ColumnPlans.Build(result, rawObjects.ColumnLayout);
 
                 // check if we need phase info
                 ColumnPlans.ScanPhaseNeeds(plans, out bool needName, out bool needNumber, out bool needOthers);
@@ -719,7 +621,7 @@ namespace ObChecked
                 Grid.BuildColumnSchemaFromLayout(result, rawObjects.ColumnLayout);
 
                 // 2) precompute column plan
-                ColumnPlan[] plans = ColumnPlans.Build(result, rawObjects.ColumnLayout);
+                ColumnMetadata[] plans = ColumnPlans.Build(result, rawObjects.ColumnLayout);
 
                 // check if we need phase info
                 ColumnPlans.ScanPhaseNeeds(plans, out bool needName, out bool needNumber, out bool needOthers);
@@ -917,6 +819,12 @@ namespace ObChecked
 
         private void BtnClear_Click(object sender, EventArgs e)
         {
+            // clear master
+
+            // clear table rows while preserving columns
+
+            // 
+
 
         }
 

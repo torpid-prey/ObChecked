@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Data;
 using TSM = Tekla.Structures.Model;
 using ObChecked.Processing;
 using ObChecked.TeklaAccess;
@@ -10,7 +9,10 @@ using ObChecked.UI;
 namespace ObChecked.Model
 {
 
-    internal class RawObjectConsolidator
+    /// <summary>
+    /// Storage for Parts, Bolts, Component property caches
+    /// </summary>
+    internal class RawObjectStore
     {
         /// <summary>
         /// Collection of part objects and property bags
@@ -35,18 +37,18 @@ namespace ObChecked.Model
          /// <summary>
         /// Collection of GUIDs of all objects processed for current fetch.
         /// </summary>
-        internal HashSet<Guid> History { get; } = new();
+        internal HashSet<Guid> FetchHistory { get; } = new();
 
-        internal RawObjectConsolidator()
+        internal RawObjectStore()
         {
             Parts = new RawObjectCollection();
             Bolts = new RawObjectCollection();
             Components = new RawObjectCollection();
 
             Others = new HashSet<string>();
-            History = new HashSet<Guid>();
+            FetchHistory = new HashSet<Guid>();
      
-            // wire owners
+            // wire owners, is this necessary??
             Parts.Owner = this;
             Bolts.Owner = this;
             Components.Owner = this;
@@ -60,8 +62,9 @@ namespace ObChecked.Model
             Parts.ClearFetch();
             Bolts.ClearFetch();
             Components.ClearFetch();
+
             Others.Clear();
-            History.Clear();
+            FetchHistory.Clear();
         }
 
         /// <summary>
@@ -84,10 +87,10 @@ namespace ObChecked.Model
                 if (!mo.IsIdentified(out Guid guid)) continue;
 
                 // skip duplicates within same fetch
-                if (History.Contains(guid)) continue;
+                if (FetchHistory.Contains(guid)) continue;
 
                 // add unique GUID to history
-                History.Add(guid);
+                FetchHistory.Add(guid);
 
                 if (mo is TSM.Part)
                 {
@@ -105,7 +108,7 @@ namespace ObChecked.Model
                     Components.FetchObject(mo);
                     progress.IncComp();
 
-                    // Expand ALL children (covers nested components recursively)
+                    // Expand all children (covers nested components recursively)
                     TSM.ModelObjectEnumerator children = mo.GetChildren();
                     if (children != null)
                     {
@@ -145,12 +148,12 @@ namespace ObChecked.Model
     /// </summary>
     internal class RawObjectCollection
     {
-        internal RawObjectConsolidator Owner; // set this when constructing RawObjects for some reason
+        internal RawObjectStore Owner; // set this when constructing RawObjects for some reason
 
         /// <summary>
         /// Column layout for the current group
         /// </summary>
-        internal List<ColumnLayout> ColumnLayout { get; set; }
+        internal List<ColumnDefinition> ColumnLayout { get; set; }
 
         /// <summary>
         /// Master collection of raw model objects
@@ -165,7 +168,7 @@ namespace ObChecked.Model
         internal RawObjectCollection()
         {
             //ModelObjects = new List<TSM.ModelObject>(256); // modest initial capacity
-            ColumnLayout = new List<ColumnLayout>();
+            ColumnLayout = new List<ColumnDefinition>();
             Master = new Dictionary<Guid, RawObject>();
             Fetch = new Dictionary<Guid, RawObject>();
         }

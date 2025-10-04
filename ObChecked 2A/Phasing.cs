@@ -13,10 +13,17 @@ namespace ObChecked.Phasing
         internal const bool StopAfterFirstChildMismatch = true;
     }
 
-    internal static class PhaseTypeFilter
+    internal static class PhaseFilter
     {
-        internal static bool ChildTypeHasPhase(TSM.ModelObject m) =>
-            m is TSM.Weld || m is TSM.BooleanPart || m is TSM.Fitting || m is TSM.BoltGroup;
+        /// <summary>
+        /// Determines if the provided object type can have a phase assigned
+        /// </summary>
+        /// <param name="m"></param>
+        /// <returns></returns>
+        internal static bool ChildTypeHasPhase(TSM.ModelObject m)
+        {
+            return m is TSM.Weld || m is TSM.BooleanPart || m is TSM.Fitting || m is TSM.BoltGroup || m is TSM.CutPlane;
+        }
     }
 
     // ---------------- Phase DTOs & Row Caches ----------------
@@ -119,23 +126,23 @@ namespace ObChecked.Phasing
 
     // ---------------- Assembly-Main Cache ----------------
 
-    internal struct AssyMainInfo
+    internal struct AssemblyInfo
     {
         internal Guid MainGuid;
         internal PhaseBase Phase;   // Phase of the assembly main part
     }
 
-    internal static class AssyMainCache
+    internal static class AssemblyCache
     {
         private static readonly object _lock = new();
-        private static readonly Dictionary<Guid, AssyMainInfo> _cache = new(2048);
+        private static readonly Dictionary<Guid, AssemblyInfo> _cache = new(2048);
 
         internal static void Clear()
         {
             lock (_lock) _cache.Clear();
         }
 
-        internal static AssyMainInfo Get(TSM.Assembly assy)
+        internal static AssemblyInfo Get(TSM.Assembly assy)
         {
             if (assy == null || assy.Identifier == null) return default;
             Guid assyGuid = assy.Identifier.GUID;
@@ -148,7 +155,7 @@ namespace ObChecked.Phasing
 
             // Miss → compute without holding the lock
             var main = assy.GetMainPart();
-            var fresh = new AssyMainInfo
+            var fresh = new AssemblyInfo
             {
                 MainGuid = (main?.Identifier != null) ? main.Identifier.GUID : Guid.Empty,
                 Phase = PhaseCache.Get(main) // <-- single phase source
@@ -166,9 +173,9 @@ namespace ObChecked.Phasing
 
     // ---------------- Phase Resolution (Ensure*) ----------------
 
-    internal static class PhaseResolve
+    internal static class EnsurePhase
     {
-        internal static void EnsurePartPhase(TSM.Part part, bool needOthers, PartRowCache cache)
+        internal static void Part(TSM.Part part, bool needOthers, PartRowCache cache)
         {
             if (!cache.PhaseFetched)
             {
@@ -201,7 +208,7 @@ namespace ObChecked.Phasing
             // Compare to assembly main (cached)
             long t0 = Stopwatch.GetTimestamp();
             var assy = part.GetAssembly();
-            var mi = AssyMainCache.Get(assy);
+            var mi = AssemblyCache.Get(assy);
             long t1 = Stopwatch.GetTimestamp();
             D.Add(ref PhaseTime.Parts_MainTicks, t1 - t0);
 
@@ -229,7 +236,7 @@ namespace ObChecked.Phasing
                 var child = ch.Current;
                 if (child == null) continue;
 
-                if (!PhaseTypeFilter.ChildTypeHasPhase(child))
+                if (!PhaseFilter.ChildTypeHasPhase(child))
                     continue;
 
                 D.Inc(ref PhaseDiag.ChildrenVisited_Parts);
@@ -271,7 +278,7 @@ namespace ObChecked.Phasing
             D.Inc(ref PhaseDiag.OthersComputed_Parts);
         }
 
-        internal static void EnsureBoltPhase(TSM.BoltGroup bolt, bool needOthers, BoltRowCache cache)
+        internal static void Bolt(TSM.BoltGroup bolt, bool needOthers, BoltRowCache cache)
         {
             if (!cache.PhaseFetched)
             {
@@ -318,7 +325,7 @@ namespace ObChecked.Phasing
             cache.Phase.OthersComputed = true;
         }
 
-        internal static void EnsureComponentPhase(TSM.BaseComponent comp, bool needOthers, ComponentRowCache cache)
+        internal static void Component(TSM.BaseComponent comp, bool needOthers, ComponentRowCache cache)
         {
             if (!cache.PhaseFetched)
             {

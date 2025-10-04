@@ -195,10 +195,4 @@ namespace ObChecked.Processing
             return tot > 0 ? (don * 100) / tot : 0;
         }
     }
-
-
-
-
-
-
 }
